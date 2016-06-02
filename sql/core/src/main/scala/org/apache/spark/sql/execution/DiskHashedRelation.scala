@@ -122,7 +122,7 @@ private[sql] class DiskPartition (
 
       override def next() = {
         // IMPLEMENT ME
-        if (currentIterator.hasNext || fetchNextChunk())
+        if (currentIterator.hasNext)
           currentIterator.next
         else
           null
@@ -130,7 +130,7 @@ private[sql] class DiskPartition (
 
       override def hasNext() = {
         // IMPLEMENT ME
-        currentIterator.hasNext || fetchNextChunk
+        currentIterator.hasNext || fetchNextChunk()
       }
 
       /**
@@ -147,14 +147,12 @@ private[sql] class DiskPartition (
           val byteArrayList = CS143Utils.getListFromBytes(byteArray);
 
           if (!byteArrayList.isEmpty) {
-
             currentIterator = byteArrayList.iterator.asScala
             true
-          }else
+          } else
             false
-  
-          
-       }else 
+     
+       } else 
           false
       }
     }

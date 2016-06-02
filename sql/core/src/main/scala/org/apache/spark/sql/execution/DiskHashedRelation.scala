@@ -37,11 +37,13 @@ protected [sql] final class GeneralDiskHashedRelation(partitions: Array[DiskPart
 
   override def getIterator() = {
     // IMPLEMENT ME
-    null
+    partitions.iterator
+    //null
   }
 
   override def closeAllPartitions() = {
     // IMPLEMENT ME
+    partitions.foreach(i => i.closePartition)
   }
 }
 
@@ -63,7 +65,20 @@ private[sql] class DiskPartition (
    * @param row the [[Row]] we are adding
    */
   def insert(row: Row) = {
-    // IMPLEMENT ME
+
+    if (inputClosed) {
+      throw new SparkException("Error on INSERT: Input has already closed.")
+    }
+
+    data.add(row)
+    writtenToDisk = false
+
+    //If the size of the partition exceeds the blockSize, the partition is spilled to disk.
+    if (measurePartitionSize() > blockSize) {
+      spillPartitionToDisk()
+      data.clear()
+    }
+
   }
 
   /**
@@ -107,12 +122,15 @@ private[sql] class DiskPartition (
 
       override def next() = {
         // IMPLEMENT ME
-        null
+        if (hasNext())
+          currentIterator.next
+        else
+          null
       }
 
       override def hasNext() = {
         // IMPLEMENT ME
-        false
+        currentIterator.hasNext || fetchNextChunk()
       }
 
       /**
@@ -123,6 +141,13 @@ private[sql] class DiskPartition (
        */
       private[this] def fetchNextChunk(): Boolean = {
         // IMPLEMENT ME
+        if (chunkSizeIterator.hasNext) {
+          byteArray = CS143Utils.getNextChunkBytes(inStream, chunkSizeIterator.next, byteArray)
+          val byteArrayList = getListFromBytes(byteArray);
+
+          currentIterator = byteArrayList.iterator.asScala
+          true
+        }
         false
       }
     }
@@ -137,6 +162,12 @@ private[sql] class DiskPartition (
    */
   def closeInput() = {
     // IMPLEMENT ME
+
+    //Write remaining data to disk
+    spillPartitionToDisk()
+    data.clear
+
+    outStream.close()
     inputClosed = true
   }
 

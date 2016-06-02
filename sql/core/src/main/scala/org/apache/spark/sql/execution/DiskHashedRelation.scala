@@ -130,7 +130,7 @@ private[sql] class DiskPartition (
 
       override def hasNext() = {
         // IMPLEMENT ME
-        currentIterator.hasNext || chunkSizeIterator.hasNext
+        currentIterator.hasNext || fetchNextChunk
       }
 
       /**
@@ -141,16 +141,21 @@ private[sql] class DiskPartition (
        */
       private[this] def fetchNextChunk(): Boolean = {
         // IMPLEMENT ME
+
         if (chunkSizeIterator.hasNext) {
           byteArray = CS143Utils.getNextChunkBytes(inStream, chunkSizeIterator.next, byteArray)
-          val byteArrayList = getListFromBytes(byteArray);
+          val byteArrayList = CS143Utils.getListFromBytes(byteArray);
 
           if (!byteArrayList.isEmpty) {
+
             currentIterator = byteArrayList.iterator.asScala
             true
-          }
-        }
-        false
+          }else
+            false
+  
+          
+       }else 
+          false
       }
     }
   }
@@ -207,6 +212,18 @@ private[sql] object DiskHashedRelation {
                 size: Int = 64,
                 blockSize: Int = 64000) = {
     // IMPLEMENT ME
-    null
+     var rowArray: Array[DiskPartition] = new Array[DiskPartition](size)
+    for(i <- 0  until size){
+      rowArray(i) = new DiskPartition("partition" + i, blockSize)
+    }
+    while(input.hasNext){
+      val row = input.next
+      val hash = keyGenerator(row).hashCode() % size
+      rowArray(hash).insert(row)
+    }
+    rowArray.foreach(i => i.closeInput)
+
+    new GeneralDiskHashedRelation(rowArray)
+  
   }
 }

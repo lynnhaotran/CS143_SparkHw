@@ -145,8 +145,10 @@ private[sql] class DiskPartition (
           byteArray = CS143Utils.getNextChunkBytes(inStream, chunkSizeIterator.next, byteArray)
           val byteArrayList = getListFromBytes(byteArray);
 
-          currentIterator = byteArrayList.iterator.asScala
-          true
+          if (!byteArrayList.isEmpty) {
+            currentIterator = byteArrayList.iterator.asScala
+            true
+          }
         }
         false
       }

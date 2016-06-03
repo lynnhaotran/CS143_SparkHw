@@ -36,13 +36,12 @@ protected [sql] final class GeneralDiskHashedRelation(partitions: Array[DiskPart
     extends DiskHashedRelation with Serializable {
 
   override def getIterator() = {
-    // IMPLEMENT ME
+    // IMPLEMENT ME: DONE
     partitions.iterator
-    //null
   }
 
   override def closeAllPartitions() = {
-    // IMPLEMENT ME
+    // IMPLEMENT ME: DONE
     partitions.foreach(i => i.closePartition)
   }
 }
@@ -70,6 +69,7 @@ private[sql] class DiskPartition (
       throw new SparkException("Error on INSERT: Input has already closed.")
     }
 
+    //Add row to data
     data.add(row)
     writtenToDisk = false
 
@@ -121,7 +121,8 @@ private[sql] class DiskPartition (
       var byteArray: Array[Byte] = null
 
       override def next() = {
-        // IMPLEMENT ME
+        // IMPLEMENT ME: DONE
+        //Obtain next iterator until there's no more data.
         if (currentIterator.hasNext)
           currentIterator.next
         else
@@ -129,7 +130,8 @@ private[sql] class DiskPartition (
       }
 
       override def hasNext() = {
-        // IMPLEMENT ME
+        // IMPLEMENT ME: DONE
+        //Either move the iterator forward or check if there's more data
         currentIterator.hasNext || fetchNextChunk()
       }
 
@@ -140,8 +142,8 @@ private[sql] class DiskPartition (
        * @return true unless the iterator is empty.
        */
       private[this] def fetchNextChunk(): Boolean = {
-        // IMPLEMENT ME
-
+        // IMPLEMENT ME: DONE
+        //If there is data on disk, fetch it and update the currentIterator
         if (chunkSizeIterator.hasNext) {
           byteArray = CS143Utils.getNextChunkBytes(inStream, chunkSizeIterator.next, byteArray)
           val byteArrayList = CS143Utils.getListFromBytes(byteArray);
@@ -152,7 +154,8 @@ private[sql] class DiskPartition (
           } else
             false
      
-       } else 
+       }
+       else 
           false
       }
     }
@@ -166,7 +169,7 @@ private[sql] class DiskPartition (
    * also be closed.
    */
   def closeInput() = {
-    // IMPLEMENT ME
+    // IMPLEMENT ME: DONE 
 
     //Write remaining data to disk
     spillPartitionToDisk()
@@ -209,11 +212,13 @@ private[sql] object DiskHashedRelation {
                 keyGenerator: Projection,
                 size: Int = 64,
                 blockSize: Int = 64000) = {
-    // IMPLEMENT ME
-     var rowArray: Array[DiskPartition] = new Array[DiskPartition](size)
+    // IMPLEMENT ME: DONE
+    var rowArray: Array[DiskPartition] = new Array[DiskPartition](size)
+    //Create each partition
     for(i <- 0  until size){
       rowArray(i) = new DiskPartition("partition" + i, blockSize)
     }
+    //Hash input and insert into respective partitions
     while(input.hasNext){
       val row = input.next
       val hash = keyGenerator(row).hashCode() % size
